@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, clients, projects, invoices, bids, payments, timeEntries, businessSettings, notifications } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,116 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Ensure business settings exist for new users
+export async function ensureBusinessSettings(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  try {
+    const existing = await getBusinessSettingsByUserId(userId);
+    if (!existing) {
+      await db.insert(businessSettings).values({
+        userId,
+        companyName: "My Company",
+        taxRate: "0",
+        invoicePrefix: "INV",
+        bidPrefix: "BID",
+        nextInvoiceNumber: 1001,
+        nextBidNumber: 1001,
+      });
+    }
+  } catch (error) {
+    console.warn("[Database] Failed to ensure business settings:", error);
+  }
+}
+
+// Clients
+export async function getClientsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(clients).where(eq(clients.userId, userId));
+}
+
+export async function getClientById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(clients).where(eq(clients.id, id)).limit(1);
+  return result[0];
+}
+
+// Projects
+export async function getProjectsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(projects).where(eq(projects.userId, userId));
+}
+
+export async function getProjectById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+  return result[0];
+}
+
+// Invoices
+export async function getInvoicesByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(invoices).where(eq(invoices.userId, userId));
+}
+
+export async function getInvoiceById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+  return result[0];
+}
+
+// Bids
+export async function getBidsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(bids).where(eq(bids.userId, userId));
+}
+
+export async function getBidById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(bids).where(eq(bids.id, id)).limit(1);
+  return result[0];
+}
+
+// Payments
+export async function getPaymentsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(payments).where(eq(payments.userId, userId));
+}
+
+export async function getPaymentsByInvoiceId(invoiceId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(payments).where(eq(payments.invoiceId, invoiceId));
+}
+
+// Time Entries
+export async function getTimeEntriesByProjectId(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(timeEntries).where(eq(timeEntries.projectId, projectId));
+}
+
+// Business Settings
+export async function getBusinessSettingsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(businessSettings).where(eq(businessSettings.userId, userId)).limit(1);
+  return result[0];
+}
+
+// Notifications
+export async function getNotificationsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(notifications).where(eq(notifications.userId, userId));
+}
